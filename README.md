@@ -12,6 +12,9 @@ The paired test boards are saved in KiCad 9 format and need KiCad 9 or later to 
 |--------|-----------------------|---------------------------------------------------|
 | JLCPCB | [`JLCPCB/`](JLCPCB/)  | https://jlcpcb.com/capabilities/pcb-capabilities  |
 | PCBWay | [`PCBWay/`](PCBWay/)  | https://www.pcbway.com/capabilities.html          |
+| LionCircuits | [`LionCircuits/`](LionCircuits/) | https://www.lioncircuits.com/pcb-manufacturing-capabilities |
+
+LionCircuits is different in two ways (added in this fork, read from the fab's pages on 12 Nov 2026). Its files are named after its service tiers, not the four builds below: `LionCircuits.kicad_dru` (MII, 4 layer, 1oz), `-MII-2L-1oz`, `-Custom-4L-1oz`, `-Custom-4L-2oz` and `-Rush-4L-1oz`. And it publishes fewer limits than the other two, so a rule whose value it does not publish is left out and replaced by a comment naming the missing value; nothing is estimated. It has no test board yet and is not part of `Generic/`. The header of `capabilities/LionCircuits.toml` lists each page row, the key it feeds, and the points still to confirm with the fab.
 
 There is also [`Generic/`](Generic/) — one set of rules that satisfies both fabs at once, derived from the two above. See [Generic (either fab)](#generic-either-fab).
 

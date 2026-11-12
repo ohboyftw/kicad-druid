@@ -35,6 +35,9 @@ class Fab:
         self.prefix = data["fab"]["prefix"]
         self.url = data["fab"]["capabilities_url"]
         self.default_variant = data["fab"]["default_variant"]
+        # A fab whose variants are its own service tiers shares no variant id
+        # with the others, so it opts out of the derived Generic fab.
+        self.in_generic = data["fab"].get("in_generic", True)
         self.flags = data.get("flags", {})
         self.constants = data.get("constants", {})
         self.variants = data.get("variant", [])
@@ -53,7 +56,13 @@ class Fab:
         self.value_sources: dict = {}
 
 
-def make_val(constants: dict, over: dict, label: str = ""):
+# Stands in for a value the fab does not publish. generate() drops every rule
+# that carries it, so no rule is ever emitted with a figure nobody can cite.
+UNPUBLISHED = "<unpublished:%s>"
+UNPUBLISHED_RE = re.compile(r"<unpublished:(\w+)>")
+
+
+def make_val(constants: dict, over: dict, label: str = "", omit_unpublished: bool = False):
     """Return a lookup that prefers the variant override, then the constant."""
 
     def val(key: str) -> str:
@@ -61,6 +70,8 @@ def make_val(constants: dict, over: dict, label: str = ""):
             return over[key]
         if key in constants:
             return constants[key]
+        if omit_unpublished:
+            return UNPUBLISHED % key
         where = f" for {label}" if label else ""
         raise KeyError(f"missing value '{key}'{where} — add it to the fab's TOML")
 
@@ -104,7 +115,7 @@ ALLOWED_FLAGS = frozenset({
     "avoid_kelvin_test", "avoid_small_via_extra_cost", "allow_blind_buried",
     "enforce_plated_slot_ratio", "emit_implied_clearance", "emit_bga",
     "merge_trace_layers", "emit_same_net_trace_spacing",
-    "emit_smd_pad_min",
+    "emit_smd_pad_min", "omit_unpublished",
 })
 VARIANT_KEYS = frozenset({"id", "label", "layers", "over"})
 DIFFPAIR_KEYS = frozenset({"name", "diff", "track_width", "gap"})
@@ -233,7 +244,8 @@ MERGED_INNER_SOURCE = {
 # merge_trace_layers replaces the outer/inner trace rules with one unlayered
 # rule that cannot carry a separate, stricter inner limit. They are only kept
 # when every fab sets them.
-FLAGS_KEPT_ONLY_IF_ALL = frozenset({"allow_blind_buried", "merge_trace_layers"})
+FLAGS_KEPT_ONLY_IF_ALL = frozenset(
+    {"allow_blind_buried", "merge_trace_layers", "omit_unpublished"})
 
 # Ranges whose two ends can now come from different fabs.
 RANGE_PAIRS = [("drill_hole_min", "drill_hole_max"), ("pth_hole_min", "pth_hole_max")]
@@ -399,8 +411,9 @@ def load_fabs(root: str = ROOT) -> list:
             fab = Fab(tomllib.load(fh))
         validate(fab)
         fabs.append(fab)
-    if len(fabs) > 1:
-        fabs.append(build_generic(fabs))
+    members = [f for f in fabs if f.in_generic]
+    if len(members) > 1:
+        fabs.append(build_generic(members))
     return fabs
 
 
@@ -421,7 +434,8 @@ def rule(name: str, condition: str, constraints: list, comment: str = "", layer:
 def generate(fab: Fab, variant: dict) -> str:
     p = fab.prefix
     over = variant.get("over", {})
-    val = make_val(fab.constants, over, f"{fab.name} {variant.get('id', '?')}")
+    val = make_val(fab.constants, over, f"{fab.name} {variant.get('id', '?')}",
+                   bool(fab.flags.get("omit_unpublished")))
 
     def has_val(key: str) -> bool:
         return key in over or key in fab.constants
@@ -684,7 +698,17 @@ def generate(fab: Fab, variant: dict) -> str:
     out.append(rule(f"{p}: Trace to Board Edge", "A.Type == 'Track'",
                     [f"(constraint edge_clearance (min {val('edge_routed')}))"]))
 
-    return "\n".join(out) + "\n"
+    return "\n".join(drop_unpublished(fab, block) for block in out) + "\n"
+
+
+def drop_unpublished(fab: Fab, block: str) -> str:
+    """Replace a rule that needs an unpublished value with a comment saying so."""
+    missing = sorted(set(UNPUBLISHED_RE.findall(block)))
+    if not missing:
+        return block
+    name = re.search(r'\(rule "([^"]+)"', block)
+    title = name.group(1) if name else "rule"
+    return f"# {title}: omitted. {fab.name} does not publish {', '.join(missing)}."
 
 
 def find_orphans(expected_paths: set, root: str) -> list:

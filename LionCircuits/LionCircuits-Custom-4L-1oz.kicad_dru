@@ -1,0 +1,142 @@
+(version 1)
+# Custom Design Rules (DRC) for KiCad — LionCircuits: Custom service, 4 layer, 1oz copper
+#
+# Matching LionCircuits capabilities: https://www.lioncircuits.com/pcb-manufacturing-capabilities
+#
+# This is the 'Custom-4L-1oz' variant. If your order differs, use one of
+# the other variants (MII-2L-1oz, MII-4L-1oz, Custom-4L-2oz, Rush-4L-1oz) — see the README table.
+#
+# GENERATED FILE — do not edit by hand.
+# Edit capabilities/LionCircuits.toml and run tools/generate_dru.py instead.
+#
+# KiCad documentation: https://docs.kicad.org/8.0/en/pcbnew/pcbnew.html#custom-design-rules
+
+
+# --- Drill/Hole Size ---
+
+(rule "LionCircuits: Drill Hole Size"
+	(constraint hole_size (min 0.25mm) (max 6.3mm))
+)
+
+(rule "LionCircuits: Via Hole Size"
+	(condition "A.Type == 'Via'")
+	(constraint hole_size (min 0.25mm))
+)
+
+(rule "LionCircuits: Via Annular Ring"
+	(condition "A.Type == 'Via'")
+	(constraint annular_width (min 0.152mm))
+)
+
+(rule "LionCircuits: PTH Hole Size"
+	(condition "A.Type == 'Pad' && A.Pad_Type == 'Through-hole' && A.isPlated()")
+	(constraint hole_size (min 0.25mm) (max 6.3mm))
+)
+
+# LionCircuits: NPTH Hole Size: omitted. LionCircuits does not publish npth_hole_min.
+
+# LionCircuits: Castellated Hole Size: omitted. LionCircuits does not publish castellated_min.
+
+(rule "LionCircuits: PTH Annular Ring"
+	(condition "A.Type == 'Pad' && A.Pad_Type == 'Through-hole' && A.isPlated()")
+	(constraint annular_width (min 0.152mm))
+)
+
+# LionCircuits: NPTH Annular Ring: omitted. LionCircuits does not publish npth_annular.
+
+
+# --- Slot Width ---
+
+(rule "LionCircuits: Plated Slot Width"
+	(condition "A.Type == 'Pad' && (A.Hole_Size_X != A.Hole_Size_Y) && A.isPlated()")
+	(constraint hole_size (min 0.8mm))
+)
+
+(rule "LionCircuits: Non-Plated Slot Width"
+	(condition "A.Type == 'Pad' && (A.Hole_Size_X != A.Hole_Size_Y) && !A.isPlated()")
+	(constraint hole_size (min 0.8mm))
+)
+
+
+# --- Minimum Clearance ---
+
+(rule "LionCircuits: Via Hole to Via Hole Clearance (Different Nets)"
+	(condition "A.Type == 'Via' && B.Type == 'Via' && A.Net != B.Net")
+	(constraint hole_to_hole (min 0.254mm))
+)
+
+(rule "LionCircuits: Pad Hole to Pad Hole Clearance (Pad with Hole, Different Nets)"
+	(condition "A.Type == 'Pad' && (A.Pad_Type == 'Through-hole' || A.Pad_Type == 'NPTH, mechanical') && B.Type == 'Pad' && (B.Pad_Type == 'Through-hole' || B.Pad_Type == 'NPTH, mechanical') && A.Net != B.Net")
+	(constraint hole_to_hole (min 0.254mm))
+)
+
+(rule "LionCircuits: Via Hole to Via Hole Clearance (Same Net)"
+	(condition "A.Type == 'Via' && B.Type == 'Via' && A.Net == B.Net")
+	(constraint hole_to_hole (min 0.254mm))
+)
+
+# NOTE: Inferred from the pad-to-pad hole figure; not documented by the fab.
+# A via and a plated pad on different nets are covered by neither the
+# via-to-via nor the pad-to-pad hole spacing rule; the pair involves a pad
+# hole, so the pad figure applies.
+(rule "LionCircuits: Via Hole to Pad Hole Clearance (Different Nets, inferred)"
+	(condition "((A.Type == 'Via' && B.Type == 'Pad') || (A.Type == 'Pad' && B.Type == 'Via')) && A.Net != B.Net")
+	(constraint hole_to_hole (min 0.254mm))
+)
+
+# LionCircuits: Pad to Pad Clearance (Pad without Hole, Different Nets): omitted. LionCircuits does not publish pad_nohole_diff.
+
+(rule "LionCircuits: Via to Trace"
+	(condition "A.Type == 'Via' && B.Type == 'Track'")
+	(constraint hole_clearance (min 0.254mm))
+)
+
+(rule "LionCircuits: PTH to Trace"
+	(condition "A.Type == 'Pad' && A.Pad_Type == 'Through-hole' && A.isPlated() && B.Type == 'Track'")
+	(constraint hole_clearance (min 0.254mm))
+)
+
+# LionCircuits: NPTH to Trace: omitted. LionCircuits does not publish npth_to_trace.
+
+# LionCircuits: Pad to Trace: omitted. LionCircuits does not publish pad_to_trace.
+
+
+# --- Minimum Trace Width and Spacing ---
+
+(rule "LionCircuits: Trace Width"
+	(condition "A.Type == 'Track'")
+	(constraint track_width (min 0.1524mm))
+)
+
+(rule "LionCircuits: Trace Spacing"
+	(condition "A.Type == 'Track' && B.Type == 'Track'")
+	(constraint clearance (min 0.1524mm))
+)
+
+
+# --- Legend ---
+
+(rule "LionCircuits: Minimum Line Width"
+	(layer "?.SilkS")
+	(condition "A.Type == 'Text' || A.Type == 'Text Box'")
+	(constraint text_thickness (min 0.152mm))
+)
+
+(rule "LionCircuits: Minimum Text Height"
+	(layer "?.SilkS")
+	(condition "A.Type == 'Text' || A.Type == 'Text Box'")
+	(constraint text_height (min 0.5842mm))
+)
+
+(rule "LionCircuits: Pad to Silkscreen"
+	(condition "A.Type == 'Pad' && ((A.existsOnLayer('F.Mask') && B.Layer == 'F.SilkS') || (A.existsOnLayer('B.Mask') && B.Layer == 'B.SilkS'))")
+	(constraint silk_clearance (min 0.1524mm))
+)
+
+
+# --- Board Outlines ---
+
+(rule "LionCircuits: Trace to Board Edge"
+	(condition "A.Type == 'Track'")
+	(constraint edge_clearance (min 0.3mm))
+)

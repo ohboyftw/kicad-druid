@@ -302,7 +302,7 @@ check(g.find_orphans(set(g.output_path(f, v) for f in fabs for v in f.variants),
 generic = [f for f in fabs if f.name == g.GENERIC_NAME]
 check(len(generic) == 1, "load_fabs() derives exactly one Generic fab")
 generic = generic[0]
-real_fabs = [f for f in fabs if f is not generic]
+real_fabs = [f for f in fabs if f is not generic and f.in_generic]
 
 # Every value key must be classified as min-type or max-type, or the strictest
 # value would be picked by whichever set happened to match first.
@@ -386,5 +386,28 @@ for v in generic.variants:
     with open(g.output_path(generic, v), "r", encoding="utf-8") as fh:
         check(fh.read() == generated[(generic.name, v["id"])],
               f"Generic {v['id']}: committed file matches the generator")
+
+# --- a fab that publishes only part of the vocabulary (LionCircuits) ---
+lion = [f for f in fabs if f.name == "LionCircuits"][0]
+check(not lion.in_generic and "LionCircuits" not in " ".join(generic.intro_lines),
+      "a fab with in_generic = false is left out of Generic")
+lion_mii = generated[("LionCircuits", "MII-4L-1oz")]
+check('(rule "LionCircuits: NPTH Hole Size"' not in lion_mii
+      and "NPTH Hole Size: omitted. LionCircuits does not publish npth_hole_min." in lion_mii,
+      "omit_unpublished: a rule with an unpublished value becomes a comment")
+check("(min 0.35mm)" in rule_block(lion_mii, "LionCircuits: Via Hole Size"),
+      "LionCircuits MII: via hole is the 0.35mm mechanical drill minimum")
+check("(min 0.254mm)" in rule_block(generated[("LionCircuits", "Custom-4L-2oz")],
+                                     "LionCircuits: Trace Width"),
+      "LionCircuits Custom 2oz: trace width is 10 mil")
+check(not any("<unpublished" in text for text in generated.values()),
+      "no placeholder for an unpublished value reaches any generated file")
+no_flag = g.Fab({"fab": {"name": "X", "prefix": "X", "capabilities_url": "", "default_variant": "a"},
+                 "variant": [{"id": "a", "label": "a", "layers": 2}]})
+try:
+    g.generate(no_flag, no_flag.variants[0])
+    check(False, "a missing value without omit_unpublished must raise")
+except KeyError as e:
+    check("missing value" in str(e), "a missing value without omit_unpublished raises")
 
 print(f"OK — {PASSED} checks passed")

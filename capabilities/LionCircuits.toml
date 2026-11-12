@@ -1,0 +1,158 @@
+# Source of truth for LionCircuits (Bengaluru) design rules.
+#
+# Every value below is a figure printed on LionCircuits' own pages, read on
+# 12 Nov 2026 (two independent readings, which agreed):
+#   https://www.lioncircuits.com/pcb-manufacturing-capabilities   ("capabilities page")
+#   https://www.lioncircuits.com/make-in-india-pcb                ("MII page")
+# The capabilities page has one column per service tier: MII, Custom, Rush.
+# The variants below are those tiers, so they share no id with the other fabs
+# and this file stays out of the derived Generic rules (in_generic = false).
+#
+# A value LionCircuits does not publish is left out, and omit_unpublished drops
+# the rule that needs it. Nothing here is estimated.
+#
+# How the page's rows map to keys (the page gives mil; 1 mil = 0.0254 mm):
+#   "Drill Hole Diameter(Mechanical)" 0.35 - 6.3mm (MII), 0.25 (Custom), 0.4 (Rush)
+#       -> drill_hole_min/max. The page has no separate via or PTH hole size, so
+#          via_hole, pth_hole_min and pth_hole_max take the same drill range.
+#   "Annular Rings" 0.152mm/6mil -> via_annular and pth_annular.
+#   "Minimum distance between Vias (plated holes)" 12 / 10 / 14 mil
+#       -> via_hole_diff, via_same_net, pad_hole_diff, via_pad_hole_diff
+#          (the row says plated holes, with no condition on the net).
+#   "Minimum distance between Via(plated holes) and trace" 12 / 10 / 14 mil
+#       -> via_to_trace and pth_to_trace.
+#   "Minimum trace spacing/width" 1oz 6/6 mil (MII, Custom), 8/8 mil (Rush);
+#       2oz 10/10 mil (Custom, Rush). One figure for all copper layers.
+#   "Silk Screen to Solder Pad" 6 / 6 / 8 mil -> silk_clearance.
+#   "Min silkscreen height/trace width" 0.5842mm /23mil, 0.152mm /6mil.
+#   "Circuit to edge" 0.3mm /12mil -> edge_routed (the page does not say routed).
+#   "Min diameter for slots" 0.8mm -> plated and non-plated slot width.
+#
+# Published but not expressible with the current rule set:
+#   "Trace to copper pour" 1oz 6 mil (MII, Custom), 8 mil (Rush); 2oz 10 / 12 mil.
+#   "Edge Castellation" No (MII, Rush), Yes (Custom).
+#   Machine assembly: "50mm x 100mm for machine assembly, smaller boards need
+#   to be panelized."
+#
+# Open, ask the fab before relying on them:
+#   Solder mask dam: the capabilities page says 0.152mm/6mil for MII, the MII
+#   page says 2mil. Solder mask expansion is not published.
+#   Blind and buried vias are not mentioned, so no rule is emitted either way.
+#   NPTH sizes and clearances, SMD pad-to-pad and pad-to-trace clearance are
+#   not published.
+
+[fab]
+name = "LionCircuits"
+prefix = "LionCircuits"
+capabilities_url = "https://www.lioncircuits.com/pcb-manufacturing-capabilities"
+default_variant = "MII-4L-1oz"   # gets the plainly-named LionCircuits/LionCircuits.kicad_dru
+in_generic = false
+
+[flags]
+omit_unpublished = true
+merge_trace_layers = true      # one published trace limit for every copper layer
+allow_blind_buried = true      # not mentioned on the page: no assertion emitted
+
+[constants]
+drill_hole_max     = "6.3mm"
+pth_hole_max       = "6.3mm"
+via_annular        = "0.152mm"
+pth_annular        = "0.152mm"
+plated_slot_min    = "0.8mm"
+nonplated_slot_min = "0.8mm"
+text_thickness     = "0.152mm"
+text_height        = "0.5842mm"
+edge_routed        = "0.3mm"
+
+# MII (Make in India): 2 and 4 layers, 1oz only.
+[[variant]]
+id = "MII-2L-1oz"
+label = "MII service, 2 layer, 1oz copper"
+layers = 2
+[variant.over]
+drill_hole_min      = "0.35mm"
+via_hole            = "0.35mm"
+pth_hole_min        = "0.35mm"
+via_hole_diff       = "0.3048mm"
+via_same_net        = "0.3048mm"
+pad_hole_diff       = "0.3048mm"
+via_pad_hole_diff   = "0.3048mm"
+via_to_trace        = "0.3048mm"
+pth_to_trace        = "0.3048mm"
+trace_width_outer   = "0.1524mm"
+trace_spacing_outer = "0.1524mm"
+silk_clearance      = "0.1524mm"
+
+[[variant]]
+id = "MII-4L-1oz"
+label = "MII service, 4 layer, 1oz copper"
+layers = 4
+[variant.over]
+drill_hole_min      = "0.35mm"
+via_hole            = "0.35mm"
+pth_hole_min        = "0.35mm"
+via_hole_diff       = "0.3048mm"
+via_same_net        = "0.3048mm"
+pad_hole_diff       = "0.3048mm"
+via_pad_hole_diff   = "0.3048mm"
+via_to_trace        = "0.3048mm"
+pth_to_trace        = "0.3048mm"
+trace_width_outer   = "0.1524mm"
+trace_spacing_outer = "0.1524mm"
+silk_clearance      = "0.1524mm"
+
+# Custom: 1 to 12 layers (6 and above through sales), 1, 2 or 3 oz.
+[[variant]]
+id = "Custom-4L-1oz"
+label = "Custom service, 4 layer, 1oz copper"
+layers = 4
+[variant.over]
+drill_hole_min      = "0.25mm"
+via_hole            = "0.25mm"
+pth_hole_min        = "0.25mm"
+via_hole_diff       = "0.254mm"
+via_same_net        = "0.254mm"
+pad_hole_diff       = "0.254mm"
+via_pad_hole_diff   = "0.254mm"
+via_to_trace        = "0.254mm"
+pth_to_trace        = "0.254mm"
+trace_width_outer   = "0.1524mm"
+trace_spacing_outer = "0.1524mm"
+silk_clearance      = "0.1524mm"
+
+[[variant]]
+id = "Custom-4L-2oz"
+label = "Custom service, 4 layer, 2oz copper"
+layers = 4
+[variant.over]
+drill_hole_min      = "0.25mm"
+via_hole            = "0.25mm"
+pth_hole_min        = "0.25mm"
+via_hole_diff       = "0.254mm"
+via_same_net        = "0.254mm"
+pad_hole_diff       = "0.254mm"
+via_pad_hole_diff   = "0.254mm"
+via_to_trace        = "0.254mm"
+pth_to_trace        = "0.254mm"
+trace_width_outer   = "0.254mm"
+trace_spacing_outer = "0.254mm"
+silk_clearance      = "0.1524mm"
+
+# Rush: 1 to 12 layers, 1 or 2 oz.
+[[variant]]
+id = "Rush-4L-1oz"
+label = "Rush service, 4 layer, 1oz copper"
+layers = 4
+[variant.over]
+drill_hole_min      = "0.4mm"
+via_hole            = "0.4mm"
+pth_hole_min        = "0.4mm"
+via_hole_diff       = "0.3556mm"
+via_same_net        = "0.3556mm"
+pad_hole_diff       = "0.3556mm"
+via_pad_hole_diff   = "0.3556mm"
+via_to_trace        = "0.3556mm"
+pth_to_trace        = "0.3556mm"
+trace_width_outer   = "0.2032mm"
+trace_spacing_outer = "0.2032mm"
+silk_clearance      = "0.2032mm"
